@@ -52,7 +52,6 @@ class TFIDF_Engine:
             to counts) attributes, appends each document object to self.documents. Sets self.N to the number
             of documents that it read in. 
         """
-        # TODO
         files_path = self.corpus_location
 
 
@@ -117,23 +116,22 @@ class TFIDF_Engine:
 
             Args: a document, d - this could be a document from the corpus or a document representing a query
         """
-        # TODO
         empty_list = []
+        for term in self.term_vector_words:
+            if term in d.terms.keys():
+                value = d.terms[term]
+                term_frequency = (1+ (math.log(value)))
 
-        for word in self.term_vector_words:
-            tdif = 0 
-            for word in d.terms:
-                value = d.terms[word]
-                term_frequency = 1+ (math.log(value))
-
-                documents_frequency_df_table = self.df_table[word]
+                documents_frequency_df_table = self.df_table[term]
                 term_importance = (math.log((self.N) / documents_frequency_df_table))
 
                 term_final_vector_value = term_frequency * term_importance
                 empty_list.append(term_final_vector_value)
+            else:
+                term_final_vector_value = 0
+                empty_list.append(term_final_vector_value)
 
-            print(len(empty_list))
-            d.term_vector = tuple(empty_list)
+        d.term_vector = tuple(empty_list)
 
 
 
@@ -141,7 +139,6 @@ class TFIDF_Engine:
     def create_term_vectors(self):
         """Creates a term_vector for each document, utilizing self.create_term_vector.
         """
-        # TODO
         for document in self.documents:
             self.create_term_vector(document)
 
@@ -158,11 +155,8 @@ class TFIDF_Engine:
         """
         d1_vector = d1.term_vector
         d2_vector = d2.term_vector
-        print(len(d1_vector))
-        print(len(d2_vector))
         cos_sim = dot(d1_vector, d2_vector) / (norm(d1_vector) * norm(d2_vector))
 
-        print(cos_sim)
         return cos_sim
 
     def get_results(self, query: str) -> List[Tuple[float, int]]:
@@ -175,6 +169,24 @@ class TFIDF_Engine:
             similarity score, that is, the highest similarity score adn corresponding index will be
             first in the list.
         """
+        def takeSecond(elem):
+            return elem[0]
+
+        new_document = Document()
+        new_document.text = query
+        new_document.terms = self.tokenize(query)
+        self.create_term_vector(new_document)
+
+        tuple_list = []
+        for document in self.documents:
+            index = self.documents.index(document)
+            similarity_score = self.calculate_cosine_sim(new_document, document)
+            tuple_to_add = (similarity_score, index)
+            tuple_list.append(tuple_to_add)
+
+        tuple_list.sort(key=takeSecond, reverse=True)
+        print(tuple_list)
+        return(tuple_list)
 
 
                 
@@ -268,8 +280,7 @@ if __name__ == "__main__":
 
     #create the document vector for each document
     t.create_term_vectors()
-
-    #assert len(t.documents[10].term_vector) == len(t.term_vector_words), "create_term_vectors test"
+    assert len(t.documents[10].term_vector) == len(t.term_vector_words), "create_term_vectors test"
 
     #tests for calculate_cosine_sim
     assert t.calculate_cosine_sim(t.documents[0], t.documents[1]) > 0, "calculate_cosine_sim test 1"
@@ -278,9 +289,9 @@ if __name__ == "__main__":
 
     
     #tests for get_results
-    # assert t.get_results("star wars")[0][1] == 111, "get_results test 1"
+    assert t.get_results("star wars")[0][1] == 111, "get_results test 1"
     assert "Lucas announces new 'Star Wars' title" in t.documents[t.get_results("star wars")[0][1]].text, "get_results test 1"
-    # assert t.get_results("movie trek george lucas")[2][1] == 24, "get_results test 2"
+    assert t.get_results("movie trek george lucas")[2][1] == 24, "get_results test 2"
     assert "Stars of 'X-Men' film are hyped, happy, as comic heroes" in t.documents[t.get_results("movie trek george lucas")[2][1]].text 
     assert len(t.get_results("star trek")) == len(t.documents), "get_results test 3"
 
